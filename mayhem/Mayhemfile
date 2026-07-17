@@ -1,0 +1,14 @@
+project: savantenvs/btcdeb
+target: btcdeb
+
+# In-process libFuzzer harness over btcdeb's Bitcoin Script interpreter
+# (EvalScript). Replaces the old raw-CLI target (/install/bin/btcdeb run on a
+# raw file), which drove no code from a fuzz input and recorded 0 edges. Target
+# NAME is preserved ("btcdeb") so Mayhem run history is not orphaned.
+cmds:
+  - cmd: /mayhem/btcdeb_fuzz
+    libfuzzer: true
+
+testsuite:
+  - https://$MAYHEM_DOMAIN/$MAYHEM_PROJECT/$MAYHEM_TARGET/testsuite.tar
+  - file://mayhem/btcdeb/testsuite
