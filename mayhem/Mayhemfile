@@ -1,0 +1,26 @@
+project: savantenvs/btcdeb
+target: btcdeb-buggy-mhh-run-21
+
+# Backport (RFD 0001) of mayhemheroes/btcdeb run 21 @ 249921d.
+#
+# Run 21 fuzzed the plain `btcdeb` CLI: no libFuzzer, no @@ placeholder — btcdeb reads one line of
+# script text from stdin whenever stdin isn't a tty (btcdeb.cpp's pipe_in) and runs it through the
+# Script parser and the debugger's interpreter. That surface is preserved here byte for byte, but
+# INSTRUMENTED: mayhem/harnesses/fuzz_cli_stdin.cpp replays btcdeb.cpp's pipe_in branch in process
+# (fgets-equivalent line read → parse_script → parse_stack_args → setup_environment →
+# ContinueScript). Two 1200s runs that invoked the bare CLI binary on this same commit did fuzz and
+# did find the bug, but reported edges_covered: 0 — Mayhem no longer traces an uninstrumented
+# black-box command, and SPEC.md §6.2 item 11 rejects a 0-edge target.
+#
+# Keeping the CLI's input interface is what matters for a backport: run 21's saved testsuite is a
+# stream of raw byte lines, so it replays unchanged (48 of the first 400 seeds abort through this
+# harness vs 45 through the CLI binary itself). The live `btcdeb` target's harness is NOT usable
+# here — it reads [flags byte][raw script bytes], a different input shape that would not replay
+# this corpus (BACKPORT.md's input-interface caveat).
+cmds:
+  - cmd: /mayhem/btcdeb_cli_fuzz
+    libfuzzer: true
+
+testsuite:
+  - https://$MAYHEM_DOMAIN/$MAYHEM_PROJECT/$MAYHEM_TARGET/testsuite.tar
+  - file://mayhem/btcdeb-buggy-mhh-run-21/testsuite
